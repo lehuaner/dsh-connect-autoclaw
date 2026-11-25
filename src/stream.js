@@ -40,9 +40,12 @@ export class AutoClawError extends Error {
 	}
 }
 
-/** 从错误里认出「额度耗尽」（810001 = 高峰期/免费额度用尽）。 */
+/**
+ * 从错误里认出 810001 —— 瞬时高峰限流（不是额度耗尽：钱包余额与模型可用性无关，
+ * 实测同一时刻四个模型有通有堵，几分钟内自愈）。
+ */
 export function detectQuotaExhausted(error) {
-	if (error?.kind === 'quota' || error?.code === ERROR_CODES.PAY_VIEW) return true
+	if (error?.kind === 'busy' || error?.kind === 'quota' || error?.code === ERROR_CODES.PAY_VIEW) return true
 	const text = `${error?.message ?? ''}${error?.failure ?? ''}`
 	return text.includes('810001') || text.includes('pay-view')
 }
@@ -50,7 +53,8 @@ export function detectQuotaExhausted(error) {
 function codeOf(kind) {
 	if (kind === 'auth') return 'AUTH'
 	if (kind === 'model') return 'UNSUPPORTED_CONTENT'
-	if (kind === 'quota') return 'QUOTA'
+	// 810001 = 瞬时高峰限流，可以重试；用 RATE_LIMIT 让上层知道该等而不是该充值
+	if (kind === 'busy' || kind === 'quota') return 'RATE_LIMIT'
 	return 'SERVER'
 }
 
@@ -278,6 +282,14 @@ export async function* streamChat({ token, model, messages, signal, cookie, maxT
 				)
 			}
 			const explained = explainError(res.status, text)
+
+			// 810001 = 瞬时高峰限流。等一会儿再试，别把一次抖动当成失败。
+			if (explained.retryable === true && attempt < attempts) {
+				lastError = new AutoClawError(`AutoClaw: ${explained.message}`, codeOf(explained.kind), text)
+				await new Promise((r) => setTimeout(r, 2000 * attempt))
+				continue
+			}
+
 			throw new AutoClawError(`AutoClaw: ${explained.message}`, codeOf(explained.kind), text)
 		}
 

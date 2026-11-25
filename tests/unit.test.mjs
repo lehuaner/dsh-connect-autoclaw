@@ -264,8 +264,11 @@ test('isWafBlock：406 算可重试', () => {
 	assert.equal(isWafBlock(200, '{"code":0}', new Headers()), false)
 })
 
-test('explainError：810001 额度 / 401001 鉴权 / 非法模型', () => {
-	assert.equal(explainError(403, '{"code":810001}').kind, 'quota')
+test('explainError：810001 是限时流不是额度 / 401001 鉴权 / 非法模型', () => {
+	const busy = explainError(403, '{"code":810001}')
+	assert.equal(busy.kind, 'busy', '810001 是瞬时高峰限流')
+	assert.equal(busy.retryable, true, '限流必须可重试')
+	assert.ok(!busy.message.includes('没有可用额度'), '不能再误导用户去充值/等额度')
 	assert.equal(explainError(401, '{"code":401001}').kind, 'auth')
 	assert.equal(explainError(400, '{"message":"非法模型"}').kind, 'model')
 })

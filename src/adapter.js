@@ -64,11 +64,13 @@ export function explainError(status, body) {
 	if (code === ERROR_CODES.PAY_VIEW) {
 		return {
 			code,
-			kind: 'quota',
-			retryable: false,
+			// 810001 是**瞬时高峰限流**，不是额度耗尽：实测同一账号同一秒内
+			// 四个模型有通有不通，隔几分钟整体恢复；钱包余额也一直正常。
+			kind: 'busy',
+			retryable: true,
 			message:
-				'当前使用人数较多，系统繁忙：这个 AutoClaw 账号没有可用额度（免费额度用尽，且未开通会员）。' +
-				'换非高峰时段再试，或在 AutoClaw 客户端里开通会员后重试。'
+				'AutoClaw 服务端瞬时繁忙（高峰限流，错误码 810001）。这不是额度问题 —— ' +
+				'账号积分仍然可用，稍等几秒到几分钟重试即可。'
 		}
 	}
 	if (code === ERROR_CODES.INVALID_TOKEN || status === 401) {
