@@ -1,0 +1,59 @@
+{
+  "name": "dsh-connect-autoclaw",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "把 AutoClaw（智谱桌面客户端）的账号与模型接进 DeepSeek Harness —— 纯 HTTP 直连服务端，读本机已登录凭据，无需客户端运行；输入框显示积分余额与模型倍率。",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "src",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "autoclaw",
+    "zhipu",
+    "zwork",
+    "glm",
+    "llm-provider",
+    "http"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "react": "^18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": []
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lehuaner/dsh-connect-autoclaw.git"
+  },
+  "license": "MIT"
+}
